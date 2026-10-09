@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#08090c" />
+    <meta name="description" content="WebAR Butterfly Swarm Effect using 8th Wall World Effects and Three.js" />
+    <title>WebAR Butterfly Swarm — 8th Wall World Effects</title>
+
+    <!-- 8th Wall Engine (SLAM World Tracking) and Extras -->
+    <script src="/external/xr/xr.js" async data-preload-chunks="slam"></script>
+    <script src="/external/xrextras/xrextras.js" defer></script>
+    <script src="/external/landing-page/landing-page.js" defer></script>
+    <script type="module" crossorigin src="/assets/index-Cm5XD4lb.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-R-B1VGbr.css">
+  </head>
+  <body>
+    <!-- AR WebGL Canvas -->
+    <canvas id="ar-canvas" aria-label="WebAR Butterfly Swarm Canvas"></canvas>
+
+    <!-- UI Overlay Layer -->
+    <div id="app">
+      <!-- Header Topbar -->
+      <header class="topbar">
+        <div class="brand-badge">
+          <span class="brand-icon">🦋</span>
+          <span class="brand-title">Butterfly Swarm</span>
+        </div>
+        <button class="mode-toggle-btn hidden" id="mode-toggle-btn" type="button" title="Chuyển đổi giữa Camera AR và 3D Preview">
+          <span>📷 Bật Camera AR</span>
+        </button>
+        <div class="status-pill" id="status-pill">
+          <span class="status-dot loading" id="status-dot"></span>
+          <span id="status-text">Ready</span>
+        </div>
+      </header>
+
+      <!-- Center Welcome / Launch Card -->
+      <div class="center-overlay" id="welcome-panel">
+        <div class="welcome-card">
+          <h1>SWARM OF WONDER</h1>
+          <p>
+            Trải nghiệm đàn bướm bay dẫn đầu bởi Fantasy Queen trong không gian thế giới thực qua Camera AR.
+          </p>
+
+          <div class="swarm-meta-badges">
+            <span class="badge gold">1 Queen Leader</span>
+            <span class="badge">16 Ulysses Swarm</span>
+            <span class="badge">World Effects</span>
+          </div>
+
+          <button class="btn-primary" id="start-ar-btn" type="button">
+            <span>📷 BẬT CAMERA AR</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+
+          <button class="btn-secondary" id="preview-btn" type="button">
+            <span>🌐 XEM 3D PREVIEW</span>
+          </button>
+
+          <p class="desktop-notice" id="desktop-notice">
+            Nhấn "BẬT CAMERA AR" để cấp quyền camera và xem bướm bay trong phòng bạn!
+          </p>
+        </div>
+      </div>
+
+      <!-- Bottom HUD & Interactive Controls -->
+      <footer class="bottom-controls hidden" id="bottom-controls">
+        <div class="toast-msg hidden" id="toast-msg" role="status"></div>
+
+        <div class="hud-pill-bar">
+          <button class="control-btn gold" id="takeoff-btn" type="button" title="Launch Queen and Swarm flight sequence">
+            <span>✨ Takeoff / Flight</span>
+          </button>
+          <button class="control-btn cyan" id="spread-btn" type="button" title="Expand swarm wide around Queen">
+            <span>🌸 Spread Swarm</span>
+          </button>
+          <button class="control-btn" id="reset-btn" type="button" title="Return to perch">
+            <span>↺ Reset</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Main Module Application -->
+  </body>
+</html>
