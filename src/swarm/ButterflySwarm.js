@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
+import { MagicalLightRibbons } from './MagicalLightRibbons.js'
 
 /**
  * Pre-allocated math objects to avoid per-frame allocations (zero GC stutter on mobile).
@@ -52,8 +53,8 @@ export class ButterflySwarm {
     this.followerTemplate = null
     this.followerClip = null
 
-    // Trail particles for Queen
-    this.sparkleSystem = null
+    this.ribbonOptions = options.ribbons || {}
+    this.ribbons = null
 
     // Smooth curved flight trajectory
     this.flightCurve = this.createFlightTrajectory()
@@ -114,8 +115,8 @@ export class ButterflySwarm {
       if (onProgress) onProgress('Spawning Butterfly Swarm...')
       this.spawnFollowers()
 
-      // 4. Create magical fairy dust trail for the Queen
-      this.setupQueenSparkleTrail()
+      this.ribbons = new MagicalLightRibbons(this.queenWrapper, this.followers, this.ribbonOptions)
+      this.root.add(this.ribbons.group)
 
       this.isLoaded = true
       if (this.onLoadComplete) this.onLoadComplete()
@@ -278,66 +279,10 @@ export class ButterflySwarm {
   }
 
   /**
-   * Creates a sparkling fairy dust particle trail that follows the Queen's tail.
-   */
-  setupQueenSparkleTrail() {
-    const particleCount = 80
-    const geometry = new THREE.BufferGeometry()
-    const positions = new Float32Array(particleCount * 3)
-    const opacities = new Float32Array(particleCount)
-
-    for (let i = 0; i < particleCount; i++) {
-      positions[i * 3 + 0] = 0
-      positions[i * 3 + 1] = 0
-      positions[i * 3 + 2] = 0
-      opacities[i] = 0
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    geometry.setAttribute('opacity', new THREE.BufferAttribute(opacities, 1))
-
-    // Soft glowing circle texture created procedurally
-    const canvas = document.createElement('canvas')
-    canvas.width = 64
-    canvas.height = 64
-    const ctx = canvas.getContext('2d')
-    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
-    gradient.addColorStop(0.0, 'rgba(255, 245, 210, 1.0)')
-    gradient.addColorStop(0.3, 'rgba(255, 210, 120, 0.75)')
-    gradient.addColorStop(0.7, 'rgba(210, 160, 255, 0.3)')
-    gradient.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)')
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, 64, 64)
-
-    const texture = new THREE.CanvasTexture(canvas)
-
-    const material = new THREE.PointsMaterial({
-      size: 0.075,
-      map: texture,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      color: new THREE.Color(0xffe8b8),
-    })
-
-    this.sparklePoints = new THREE.Points(geometry, material)
-    this.root.add(this.sparklePoints)
-
-    this.sparkleData = {
-      history: Array.from({ length: particleCount }, () => ({
-        pos: new THREE.Vector3(),
-        life: 0,
-        maxLife: 1.4 + Math.random() * 0.8,
-      })),
-      index: 0,
-      spawnTimer: 0,
-    }
-  }
-
-  /**
    * Starts the cinematic takeoff and flight sequence.
    */
   startCinematicFlight() {
+    this.ribbons?.reset()
     this.isFlying = true
     this.cinematicPhase = 'takeoff'
     this.cinematicTime = 0
@@ -364,6 +309,7 @@ export class ButterflySwarm {
    * Resets the swarm back to the start/perch position.
    */
   reset() {
+    this.ribbons?.reset()
     this.isFlying = false
     this.cinematicPhase = 'idle'
     this.cinematicTime = 0
@@ -424,8 +370,8 @@ export class ButterflySwarm {
     // 4. Update Ulysses followers flocking simulation
     this.updateFollowers(dt)
 
-    // 5. Update Queen fairy dust sparkles
-    this.updateSparkles(dt)
+    // Record the final queen/follower positions in the same local space as the AR anchor.
+    this.ribbons?.update(dt, this.isFlying)
   }
 
   /**
@@ -679,60 +625,15 @@ export class ButterflySwarm {
   }
 
   /**
-   * Updates Queen's magical fairy dust particle trail.
-   */
-  updateSparkles(dt) {
-    if (!this.sparklePoints || !this.isFlying) return
-
-    const { history } = this.sparkleData
-    const positions = this.sparklePoints.geometry.attributes.position.array
-
-    // Spawn new sparkles periodically at Queen's tail
-    this.sparkleData.spawnTimer += dt
-    if (this.sparkleData.spawnTimer > 0.045) {
-      this.sparkleData.spawnTimer = 0
-      const p = history[this.sparkleData.index]
-      // Spawn at tail position (behind Queen in local coords)
-      _queenForward.set(0, 0, 1).applyQuaternion(this.queenQuaternion)
-      p.pos.copy(this.queenPosition).addScaledVector(_queenForward, -0.16)
-      p.pos.x += (Math.random() - 0.5) * 0.05
-      p.pos.y += (Math.random() - 0.5) * 0.03
-      p.pos.z += (Math.random() - 0.5) * 0.05
-      p.life = p.maxLife
-      this.sparkleData.index = (this.sparkleData.index + 1) % history.length
-    }
-
-    // Update particle lifetimes and drift
-    for (let i = 0; i < history.length; i++) {
-      const p = history[i]
-      if (p.life > 0) {
-        p.life -= dt
-        p.pos.y -= dt * 0.035 // gentle floating descent
-        positions[i * 3 + 0] = p.pos.x
-        positions[i * 3 + 1] = p.pos.y
-        positions[i * 3 + 2] = p.pos.z
-      } else {
-        positions[i * 3 + 0] = 9999 // hide inactive particles
-        positions[i * 3 + 1] = 9999
-        positions[i * 3 + 2] = 9999
-      }
-    }
-
-    this.sparklePoints.geometry.attributes.position.needsUpdate = true
-  }
-
-  /**
    * Clean up resources
    */
   dispose() {
+    clearTimeout(this._spreadResetTimer)
     if (this.queenMixer) this.queenMixer.stopAllAction()
     for (const f of this.followers) {
       f.mixer.stopAllAction()
     }
-    if (this.sparklePoints) {
-      this.sparklePoints.geometry.dispose()
-      this.sparklePoints.material.dispose()
-    }
+    this.ribbons?.dispose()
     this.root.clear()
   }
 }

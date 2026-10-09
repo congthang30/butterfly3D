@@ -106,7 +106,7 @@ function setupDesktopPreview() {
   }
 
   activeScene = new THREE.Scene()
-  activeScene.background = new THREE.Color(0x0a0c12)
+  activeScene.background = new THREE.Color(0x030914)
 
   activeCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100)
   updateDesktopCameraPosition()
@@ -124,6 +124,9 @@ function setupDesktopPreview() {
   // Add subtle grid to give spatial ground reference in 3D preview
   const grid = new THREE.GridHelper(8, 16, 0x00d2ff, 0x223344)
   grid.position.y = -0.01
+  grid.material.transparent = true
+  grid.material.opacity = 0.12
+  grid.material.depthWrite = false
   activeScene.add(grid)
 
   // Attach Swarm
